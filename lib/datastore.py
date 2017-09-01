@@ -12,18 +12,21 @@ import sqlite3
 
 class Datastore:
 
-    def __init__(self, config):
+    def __init__(self, config, test=False):
         """
         Instantiate the class into an object for the datastore.
 
         :param config: Config object to connect to the database
 
+        :param test: Boolean, indicating if this is a test run.
+
         :return: Object to handle datastore commands.
         """
-        self.dbConn, self.cur = self._connect2db(config)
+        self.dbConn, self.cur = self._connect2db(config, test)
+        self.dbConn.row_factory = sqlite3.Row
 
     @staticmethod
-    def _connect2db(config):
+    def _connect2db(config, test):
         """
         Internal method to create a database connection and a cursor. This method is called during object
         initialization.
@@ -32,10 +35,15 @@ class Datastore:
 
         :param config: Config object containing connection information
 
+        :param test: Boolean, indicating if this is a test run.
+
         :return: Database handle and cursor for the database.
         """
         logging.debug("Creating Datastore object and cursor")
-        db = config['Main']['db']
+        if test:
+            db = config['Main']['db_for_test']
+        else:
+            db = config['Main']['db']
         db_conn = sqlite3.connect(db)
         logging.debug("Datastore object and cursor are created")
         return db_conn, db_conn.cursor()
@@ -91,6 +99,7 @@ class Datastore:
         CREATE TABLE IF NOT EXISTS meldpuntfietspaden
             (jaar integer NOT NULL,
              maand integer NOT NULL,
+             aantal integer NOT NULL,
              gemeente text NOT NULL,
              provincie text NOT NULL,
              netwerklink text NOT NULL,
@@ -149,3 +158,29 @@ class Datastore:
                 self.insert_row(tn, row2insert)
                 rec_info.info_loop()
         rec_info.end_loop()
+
+    def get_uri(self, dimensie, waarde):
+        """
+        This method will return the URI for element waarde for dimensie.
+
+        :param dimensie: waarde for the dimensie
+
+        :param waarde: waarde for the element.
+
+        :return: URI for the element, empty if found but no URI available, False if not found.
+        """
+        query = """
+        SELECT uri
+        FROM dim_element el, dimensie dim
+        WHERE dim.waarde = ?
+          AND el.waarde = ?
+          AND dim.dimensie_id = el.dimensie_id
+        """
+        self.cur.execute(query, (dimensie, waarde))
+        rows = self.cur.fetchall()
+        if len(rows) == 0:
+            # element or dimensie not found
+            return False
+        else:
+            row = rows[0]
+            return row['uri']

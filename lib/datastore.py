@@ -23,7 +23,6 @@ class Datastore:
         :return: Object to handle datastore commands.
         """
         self.dbConn, self.cur = self._connect2db(config, test)
-        self.dbConn.row_factory = sqlite3.Row
 
     @staticmethod
     def _connect2db(config, test):
@@ -45,6 +44,7 @@ class Datastore:
         else:
             db = config['Main']['db']
         db_conn = sqlite3.connect(db)
+        db_conn.row_factory = sqlite3.Row
         logging.debug("Datastore object and cursor are created")
         return db_conn, db_conn.cursor()
 
@@ -102,8 +102,8 @@ class Datastore:
              aantal integer NOT NULL,
              gemeente text NOT NULL,
              provincie text NOT NULL,
-             netwerklink text NOT NULL,
-             type_probleem_aan_infra NOT NULL)
+             netwerk text NOT NULL,
+             type_probleem_aan_infra text NOT NULL)
         """
         self.dbConn.execute(query)
         logging.info("Table meldpuntfietspaden created.")
@@ -159,6 +159,40 @@ class Datastore:
                 rec_info.info_loop()
         rec_info.end_loop()
 
+    def get_element(self, dim_element_id):
+        """
+        This method will return the waarde from an element for a specific ID.
+
+        :param dim_element_id:
+
+        :return: Waarde for the element, or False if not found.
+        """
+        query = "SELECT waarde FROM dim_element WHERE dim_element_id=?"
+        self.cur.execute(query, (dim_element_id,))
+        rows = self.cur.fetchall()
+        if len(rows) == 0:
+            return False
+        else:
+            return rows[0]['waarde']
+
+    def tx_cat2el(self, cat):
+        """
+        This method will return the translation for a specific category label. It will use function get_element instead
+        of having one single but slightly more complex query.
+
+        :param cat:
+
+        :return:
+        """
+        query = "SELECT dim_element_id FROM meldingtx WHERE melding=?"
+        self.cur.execute(query, (cat,))
+        rows = self.cur.fetchall()
+        if len(rows) == 0:
+            return False
+        else:
+            dim_element_id = rows[0]['dim_element_id']
+            return self.get_element(dim_element_id)
+
     def get_uri(self, dimensie, waarde):
         """
         This method will return the URI for element waarde for dimensie.
@@ -182,5 +216,40 @@ class Datastore:
             # element or dimensie not found
             return False
         else:
-            row = rows[0]
-            return row['uri']
+            return rows[0]['uri']
+
+    def get_waarde_from_uri(self, uri):
+        """
+        This method will return the element waarde for a specific URI.
+
+        :param uri: URI for which the waarde is required.
+
+        :return: Waarde for the URI. Empty if URI found but no waarde available (should never happen). False if URI not
+        found.
+        """
+        query = """
+        SELECT waarde
+        FROM dim_element el
+        WHERE uri = ?
+        """
+        self.cur.execute(query, (uri,))
+        rows = self.cur.fetchall()
+        if len(rows) == 0:
+            # element or dimensie not found
+            return False
+        else:
+            return rows[0]['waarde']
+
+    def remove_measurements(self, jaar, maand):
+        """
+        This method will remove all records for a specific month.
+
+        :param jaar:
+
+        :param maand:
+
+        :return:
+        """
+        query = "DELETE FROM meldpuntfietspaden WHERE jaar=? AND maand=?"
+        self.cur.execute(query, (jaar, maand))
+        return

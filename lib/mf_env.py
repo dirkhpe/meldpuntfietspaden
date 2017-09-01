@@ -131,23 +131,6 @@ def get_inifile(projectname):
     return ini_config
 
 
-def aanleg(ela):
-    """
-    This function will get 'aanleg' string and will extract 'Eerste Aanleg' or 'Laatste Aanleg' from it - or
-    ela in case 'Aanleg niet gevonden'.
-    @param ela:
-    @return: 'Eerste Aanleg', 'Laatste Aanleg', ela
-    """
-    eerste = 'Eerste Aanleg'
-    laatste = 'Laatste Aanleg'
-    if eerste in ela:
-        return eerste
-    elif laatste in ela:
-        return laatste
-    else:
-        return ela
-
-
 class LoopInfo:
     """
     This class handles a FOR loop information handling.

@@ -1,3 +1,5 @@
+#!/opt/csw/bin/python3
+
 """
 This script will refresh the information for the indicator. It will drop and recreate the table.
 """

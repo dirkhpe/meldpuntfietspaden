@@ -1,13 +1,18 @@
+#!/opt/csw/bin/python3
+
 """
 This script will collect report(s) and store the information in a file.
 """
 
 import logging
+import os
 import requests
 from lib import mf_env
 
 cfg = mf_env.init_env("meldpuntfietspaden", __file__)
 logging.info("Start application")
+http_proxy = cfg['Main']['proxy']
+os.environ['http_proxy'] = http_proxy
 url1 = cfg['MeldpuntFietspaden']['url1']
 url2 = cfg['MeldpuntFietspaden']['url2']
 url3 = cfg['MeldpuntFietspaden']['url3']

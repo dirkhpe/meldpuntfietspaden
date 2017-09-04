@@ -59,6 +59,7 @@ class Datastore:
 
     def create_indicator_table(self):
         self.create_table_meldpuntfietspaden()
+        self.create_table_mf_el()
 
     def create_meldingtx_table(self):
         self.create_table_meldingtx()
@@ -104,6 +105,23 @@ class Datastore:
              provincie text NOT NULL,
              netwerk text NOT NULL,
              type_probleem_aan_infra text NOT NULL)
+        """
+        self.dbConn.execute(query)
+        logging.info("Table meldpuntfietspaden created.")
+        return
+
+    def create_table_mf_el(self):
+        query = "DROP TABLE IF EXISTS mf_el"
+        self.dbConn.execute(query)
+        query = """
+        CREATE TABLE IF NOT EXISTS mf_el
+            (jaar integer NOT NULL,
+             maand integer NOT NULL,
+             aantal integer NOT NULL,
+             gemeente integer NOT NULL,
+             provincie integer NOT NULL,
+             netwerk integer NOT NULL,
+             type_probleem_aan_infra integer NOT NULL)
         """
         self.dbConn.execute(query)
         logging.info("Table meldpuntfietspaden created.")
@@ -175,6 +193,25 @@ class Datastore:
         else:
             return rows[0]['waarde']
 
+    def get_indicator_report(self, indicator_id):
+        """
+        This script will extract the data for the csv file for loading into the MOW Dataroom application.
+
+        :param indicator_id: ID for the indicator (Be careful: Production vs Development).
+
+        :return: list of keys and list of dictionaries containing the data.
+        """
+        query = """
+        SELECT {indic_id} as indicatorfiche_id, sum(aantal) as aantal, jaar, maand,
+               gemeente, provincie, netwerk, type_probleem_aan_infra
+        FROM meldpuntfietspaden
+        GROUP BY jaar, maand, gemeente, provincie, netwerk, type_probleem_aan_infra
+        """.format(indic_id=indicator_id)
+        self.cur.execute(query)
+        col_name_tuples = self.cur.description
+        hdr = [col_name[0] for col_name in col_name_tuples]
+        return hdr, self.cur.fetchall()
+
     def tx_cat2el(self, cat):
         """
         This method will return the translation for a specific category label. It will use function get_element instead
@@ -191,7 +228,8 @@ class Datastore:
             return False
         else:
             dim_element_id = rows[0]['dim_element_id']
-            return self.get_element(dim_element_id)
+            # return self.get_element(dim_element_id)
+            return dim_element_id
 
     def get_uri(self, dimensie, waarde):
         """
@@ -217,6 +255,29 @@ class Datastore:
             return False
         else:
             return rows[0]['uri']
+
+    def get_el(self, waarde, dimensie):
+        """
+        This function will return the dim_element_id for a specific waarde and dimensie (kolomnaam!)
+
+        :param waarde: Waarde from the element
+
+        :param dimensie: Dimensie (kolomnaam) from the element
+
+        :return: element ID.
+        """
+        query = """
+        SELECT dim_element_id
+        FROM dim_element el, dimensie dim
+        WHERE el.waarde = ?
+          AND dim.kolomnaam = ?
+        """
+        self.cur.execute(query, (waarde, dimensie))
+        rows = self.cur.fetchall()
+        if len(rows) == 0:
+            return False
+        else:
+            return rows[0]['dim_element_id']
 
     def get_waarde_from_uri(self, uri):
         """

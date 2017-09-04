@@ -47,10 +47,13 @@ def get_gemeente(naam):
     if "district " in naam:
         naam = "Antwerpen"
     uri = ds.get_uri("gemeente", naam)
+    gemeente = ds.get_el(naam, "gemeente")
     if uri:
-        provincie = get_provincie(uri)
+        provincie_naam = get_provincie(uri)
+        # It may be a good idea to rework get_provincie(uri) instead.
+        provincie = ds.get_el(provincie_naam, "provincie")
         if provincie:
-            return naam, provincie
+            return gemeente, provincie
         else:
             logging.error("Found URI for gemeente {g}, but no provincie...".format(g=uri))
     # Error with collecting gemeente or provincie.
@@ -67,11 +70,11 @@ def get_netw_type_probl(cat):
     :return: element for netwerk and element for type probleem aan infra.
     """
     if id4netwerk in cat:
-        netwerk_el = ds.get_element(3333)
+        netwerk_el = 3333
         # Strip netwerk_el from cat
         cat = cat[len(id4netwerk):]
     else:
-        netwerk_el = ds.get_element(3334)
+        netwerk_el = 3334
     probl_aan_infra = ds.tx_cat2el(cat)
     return netwerk_el, probl_aan_infra
 
@@ -163,7 +166,7 @@ for idx, file in enumerate(filelist):
     year_month = os.path.splitext(file)[0]
     year, month = year_month.split("_")
     print("Ready to populate table for {year} {month} from {fn}".format(year=year, month=month, fn=filename))
-    populate_table(filename, "meldpuntfietspaden", int(year), int(month))
+    populate_table(filename, "mf_el", int(year), int(month))
 
 # filename = cfg['MeldpuntFietspaden']['ffn']
 # populate_table(filename, "meldpuntfietspaden")

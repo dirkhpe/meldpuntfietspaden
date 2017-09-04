@@ -1,3 +1,5 @@
+#!/opt/csw/bin/python3
+
 """
 This module consolidates all local configuration for the script, including modulename collection for logfile name
 setup and initializing the config file.

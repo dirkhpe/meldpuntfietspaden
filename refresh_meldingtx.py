@@ -1,3 +1,5 @@
+#!/opt/csw/bin/python3
+
 """
 This script will refresh the translation information from melding to element.
 """

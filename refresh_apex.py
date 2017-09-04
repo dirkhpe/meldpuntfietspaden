@@ -1,3 +1,5 @@
+#!/opt/csw/bin/python3
+
 """
 This script will refresh the information from APEX. It will drop and re-create the tables dimensie and dim_element.
 It will load the data from the most recent files.

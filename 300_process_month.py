@@ -14,6 +14,21 @@ from lib import mf_env
 
 id4netwerk = "gewest_"
 
+maandnaam = [
+    'januari',
+    'februari',
+    'maart',
+    'april',
+    'mei',
+    'juni',
+    'juli',
+    'augustus',
+    'september',
+    'oktober',
+    'november',
+    'december'
+]
+
 
 def get_columns(line):
     """
@@ -75,7 +90,7 @@ def get_netw_type_probl(cat):
         cat = cat[len(id4netwerk):]
     else:
         netwerk_el = 3334
-    probl_aan_infra = ds.tx_cat2el(cat)
+    probl_aan_infra = ds.tx_cat2el_id(cat)
     return netwerk_el, probl_aan_infra
 
 
@@ -121,7 +136,7 @@ def populate_table(fn, tn, jaar, maand):
     # jaar = 2014
     # maand = 1
     # remove existing records for the period
-    ds.remove_measurements(jaar=jaar, maand=maand)
+    ds.remove_measurements_el(jaar=jaar, label=maandnaam[maand-1])
     with open(fn) as fh:
         column_line = fh.readline().strip()
         columns = get_columns(column_line)
@@ -144,9 +159,13 @@ def populate_table(fn, tn, jaar, maand):
                         if int(vals[cnt]) > 0:
                             netwerk, type_probleem_aan_infra = get_netw_type_probl(columns[cnt])
                             aantal = vals[cnt]
+                            label= maandnaam[maand-1]
+                            periode = "{jaar} {label}".format(jaar=jaar, label=label)
+                            # dagnr = ds.get_dagnr(jaar=jaar, maand=maand)
                             row2insert = dict(
+                                periode=periode,
                                 jaar=jaar,
-                                maand=maand,
+                                label=label,
                                 aantal=aantal,
                                 gemeente=gemeente,
                                 provincie=provincie,

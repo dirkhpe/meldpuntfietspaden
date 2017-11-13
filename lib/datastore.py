@@ -56,6 +56,7 @@ class Datastore:
         """
         self.create_table_dim_element()
         self.create_table_dimensie()
+        self.create_table_frequenties()
 
     def create_indicator_table(self):
         self.create_table_meldpuntfietspaden()
@@ -93,6 +94,27 @@ class Datastore:
         logging.info("Table dim_element created.")
         return
 
+    def create_table_frequenties(self):
+        query = "DROP TABLE IF EXISTS frequenties"
+        self.dbConn.execute(query)
+        query = """
+            CREATE TABLE IF NOT EXISTS frequenties
+                (dagnr integer NOT NULL,
+                 datum text NOT NULL,
+                 dag_week text NOT NULL,
+                 dag integer NOT NULL,
+                 maand text NOT NULL,
+                 jaar integer NOT NULL,
+                 maandnr integer NOT NULL,
+                 kwartaal text NOT NULL,
+                 maand_label text NOT NULL,
+                 kwartaal_label text NOT NULL,
+                 schooljaar_label text NOT NULL)
+            """
+        self.dbConn.execute(query)
+        logging.info("Table frequenties created.")
+        return
+
     def create_table_meldpuntfietspaden(self):
         query = "DROP TABLE IF EXISTS meldpuntfietspaden"
         self.dbConn.execute(query)
@@ -115,8 +137,9 @@ class Datastore:
         self.dbConn.execute(query)
         query = """
         CREATE TABLE IF NOT EXISTS mf_el
-            (jaar integer NOT NULL,
-             maand integer NOT NULL,
+            (periode text NOT NULL,
+             jaar integer NOT NULL,
+             label text NOT NULL,
              aantal integer NOT NULL,
              gemeente integer NOT NULL,
              provincie integer NOT NULL,
@@ -202,10 +225,10 @@ class Datastore:
         :return: list of keys and list of dictionaries containing the data.
         """
         query = """
-        SELECT {indic_id} as indicatorfiche_id, sum(aantal) as aantal, jaar, maand,
+        SELECT {indic_id} as indicatorfiche_id, 'J' as actief, sum(aantal) as aantal, periode, jaar, label,
                gemeente, provincie, netwerk, type_probleem_aan_infra
-        FROM meldpuntfietspaden
-        GROUP BY jaar, maand, gemeente, provincie, netwerk, type_probleem_aan_infra
+        FROM mf_el
+        GROUP BY periode, jaar, label, gemeente, provincie, netwerk, type_probleem_aan_infra
         """.format(indic_id=indicator_id)
         self.cur.execute(query)
         col_name_tuples = self.cur.description
@@ -228,7 +251,24 @@ class Datastore:
             return False
         else:
             dim_element_id = rows[0]['dim_element_id']
-            # return self.get_element(dim_element_id)
+            return self.get_element(dim_element_id)
+
+    def tx_cat2el_id(self, cat):
+        """
+        This method will return the translation for a specific category label. It will use function get_element instead
+        of having one single but slightly more complex query.
+
+        :param cat:
+
+        :return:
+        """
+        query = "SELECT dim_element_id FROM meldingtx WHERE melding=?"
+        self.cur.execute(query, (cat,))
+        rows = self.cur.fetchall()
+        if len(rows) == 0:
+            return False
+        else:
+            dim_element_id = rows[0]['dim_element_id']
             return dim_element_id
 
     def get_uri(self, dimensie, waarde):
@@ -255,6 +295,24 @@ class Datastore:
             return False
         else:
             return rows[0]['uri']
+
+    def get_dagnr(self, jaar, maand):
+        """
+        This function will return the dagnr for a specific jaar and maand number.
+
+        :param jaar: Year
+
+        :param maand: Number of the month
+
+        :return: dagnr
+        """
+        query = "SELECT dagnr FROM frequenties WHERE jaar=? AND maandnr=?"
+        self.cur.execute(query, (jaar, maand))
+        rows = self.cur.fetchall()
+        if len(rows) == 0:
+            return False
+        else:
+            return rows[0]['dagnr']
 
     def get_el(self, waarde, dimensie):
         """
@@ -313,4 +371,18 @@ class Datastore:
         """
         query = "DELETE FROM meldpuntfietspaden WHERE jaar=? AND maand=?"
         self.cur.execute(query, (jaar, maand))
+        return
+
+    def remove_measurements_el(self, jaar, label):
+        """
+        This method will remove all records for a specific month.
+
+        :param jaar:
+
+        :param maand:
+
+        :return:
+        """
+        query = "DELETE FROM mf_el WHERE jaar=? AND label=?"
+        self.cur.execute(query, (jaar, label))
         return

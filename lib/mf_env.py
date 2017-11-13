@@ -187,42 +187,15 @@ def run_script(path, script_name, *args):
     return
 
 
-def get_artikels(db, link, source_id):
+def month_year_iter(start_month, start_year):
     """
-    This function will collect all Wet Artikels linked to Source ID for class link
+    This function will iterate of months starting from the start month till today's previous month.
 
-    :param db: SQLAlchemy Database connection
-
-    :param link: Link Object: Type2Artikel, Fase2Artikel, Stap2Artikel or Document2Artikel
-
-    :param source_id: ID of the Source object (Type, Fase, Stap or Document
-
-    :return: list of WetArtikels
+    :return: Generator object return year, month tuples.
     """
-    decreet_list = []
-    besluit_list = []
-    for record in db.query(link).filter_by(id=source_id).filter(link.artikels.any()):
-        for artikel in record.artikels:
-            if artikel.toc.boek.naam == 'Decreet':
-                decreet_list.append(artikel.artikel)
-            elif artikel.toc.boek.naam == 'Uitvoeringsbesluit':
-                besluit_list.append(artikel.artikel)
-            else:
-                logging.error("Boek *{b}* not found for Class {c} and ID {id}".format(b=artikel.toc.boek.naam,
-                                                                                      c=link.__name__,
-                                                                                      id=source_id))
-    return decreet_list, besluit_list
-
-
-def format_artikels(artikel_list):
-    """
-    This function will format the list of artikel numbers.
-
-    :param artikel_list: List of artikel numbers. The  list has a lot of integers as artikel numbers. There can be
-    duplicates, the list is not ordered,...
-
-    :return: List of Artikel numbers as concatenated with , in artikel number sequence without duplicates.
-    """
-    clean_list = [str(x) for x in sorted(list(set(artikel_list)))]
-    clean_str = ", ".join(clean_list)
-    return clean_str
+    ym_start = 12*int(start_year) + int(start_month) - 1
+    today = datetime.now()
+    ym_end = 12 * today.year + today.month -1
+    for ym in range(ym_start, ym_end):
+        y, m = divmod(ym, 12)
+        yield y, m + 1

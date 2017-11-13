@@ -25,4 +25,5 @@ if __name__ == "__main__":
     datastore.populate_table(dimensie_file, "dimensie")
     dim_element_file = config['Main']['dim_element']
     datastore.populate_table(dim_element_file, "dim_element")
-
+    frequenties_file = config['Main']['frequenties']
+    datastore.populate_table(frequenties_file, "frequenties")
